@@ -31,10 +31,33 @@ public class Menu {
             switch (opcao) {
                 case 1: {
                     agenda.listarPessoas();
+                    System.out.println("");
                     break;
                 }
                 case 2: {
-                    agenda.cadastrarPessoas();
+                    String nomeContato = null;
+                    String dataNasc = null;
+                    String email = null;
+                    String telefone = null;
+                    System.out.println("Informe os dados do contato:");
+
+                    System.out.println("Nome: ");
+                    nomeContato = leitor.nextLine();
+                    nomeContato = leitor.nextLine();
+                    System.out.println("");
+
+                    System.out.println("Telefone: ");
+                    telefone = leitor.nextLine();
+                    System.out.println("");
+
+                    System.out.println("E-mail: ");
+                    email = leitor.nextLine();
+                    System.out.println("");
+
+                    System.out.println("Data de Nascimento: ");
+                    dataNasc = leitor.nextLine();
+                    System.out.println("");
+                    agenda.cadastrarPessoas(telefone, nomeContato, email, dataNasc);
                     break;
                 }
                 case 3: {
@@ -42,7 +65,10 @@ public class Menu {
                     break;
                 }
                 case 4: {
-                    agenda.excluirPessoas();
+                    System.out.println("Digite o ID do contato que deseja excluir: ");
+                    int idExcluir = leitor.nextInt();
+                    System.out.println("");
+                    agenda.excluirPessoas(idExcluir);
                     break;
                 }
                 case 5: {
