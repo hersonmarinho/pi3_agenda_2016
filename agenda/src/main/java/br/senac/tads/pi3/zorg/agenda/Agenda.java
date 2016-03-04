@@ -7,13 +7,15 @@ package br.senac.tads.pi3.zorg.agenda;
 
 import java.sql.Connection;
 import java.sql.Date;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,26 +25,15 @@ import java.util.logging.Logger;
  */
 public class Agenda {
 
-    private Connection obterConexao() throws SQLException, ClassNotFoundException {
-        Connection conn = null;
-        // Passo 1: Registrar driver JDBC.
-        Class.forName("org.apache.derby.jdbc.ClientDataSource");
-
-        // Passo 2: Abrir a conexÃ£o
-        conn = DriverManager.getConnection(
-                "jdbc:derby://localhost:1527/agendabd;SecurityMechanism=3",
-                "app", // usuario
-                "app"); // senha
-        return conn;
-    }
-
-    public void listarPessoas() {
+    // Obtem os contatos do banco
+    public void listarContatos() {
         Statement stmt = null;
         Connection conn = null;
 
         String sql = "SELECT ID_CONTATO, NM_CONTATO, DT_NASCIMENTO, VL_TELEFONE, VL_EMAIL FROM TB_CONTATO";
         try {
-            conn = obterConexao();
+            DBConnection banco = new DBConnection();
+            conn = banco.obterConexao();
             stmt = conn.createStatement();
             ResultSet resultados = stmt.executeQuery(sql);
 
@@ -54,9 +45,10 @@ public class Agenda {
                 Date dataNasc = resultados.getDate("DT_NASCIMENTO");
                 String email = resultados.getString("VL_EMAIL");
                 String telefone = resultados.getString("VL_TELEFONE");
+                //List<Contatos> contatos = new ArrayList<>();
+                
                 System.out.println("ID: " + String.valueOf(id) + ", NOME: " + nome + ", DT NASCIMENTO: " + formatadorData.format(dataNasc) + ", E-MAIL: " + email + ", TELEFONE: " + telefone);
             }
-
         } catch (SQLException ex) {
             Logger.getLogger(Agenda.class.getName()).log(Level.SEVERE, null, ex);
         } catch (ClassNotFoundException ex) {
@@ -78,21 +70,46 @@ public class Agenda {
             }
         }
     }
-    
+
+    public Contatos listarContato(int id) {
+        String sql = "SELECT * FROM TB_CONTATO WHERE ID_CONTATO = ?";
+        Contatos contato = new Contatos();
+        try {
+            DBConnection banco = new DBConnection();
+            Connection conn = banco.obterConexao();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, id);
+            ResultSet rs = ps.executeQuery();
+            while(rs.next()){
+                contato.setId(rs.getInt("ID_CONTATO"));
+                contato.setNome(rs.getString("NM_CONTATO"));
+                contato.setDataNascimento(rs.getDate("DT_NASCIMENTO"));
+                contato.setEmail(rs.getString("VL_EMAIL"));
+                contato.setTelefone(rs.getString("VL_TELEFONE"));
+            }
+        }catch (ClassNotFoundException ex){
+            Logger.getLogger(Agenda.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            Logger.getLogger(Agenda.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return contato;
+    }
+
     //Método para cadastrar contatos
-    public void cadastrarPessoas(String telefone, String nomeContato, String email, String dataNasc) {
-        Statement stmt = null;
+    public void cadastrarContato(String telefone, String nomeContato, String email, java.util.Date dataNasc) {
         Connection conn = null;
 
         String sql = "INSERT INTO TB_CONTATO (NM_CONTATO, DT_NASCIMENTO, VL_TELEFONE, VL_EMAIL, DT_CADASTRO) "
                 + "VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)";
         try {
-            conn = obterConexao();
-            stmt = conn.createStatement();
+            DBConnection banco = new DBConnection();
+            conn = banco.obterConexao();
+
             PreparedStatement ps = conn.prepareStatement(sql);
 
             ps.setString(1, nomeContato);
-            ps.setString(2, dataNasc);
+            java.sql.Date dataBanco = new java.sql.Date(dataNasc.getTime());
+            ps.setDate(2, dataBanco);
             ps.setString(3, telefone);
             ps.setString(4, email);
             int retorno = ps.executeUpdate();
@@ -110,13 +127,6 @@ public class Agenda {
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(Agenda.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
-            if (stmt != null) {
-                try {
-                    stmt.close();
-                } catch (SQLException ex) {
-                    Logger.getLogger(Agenda.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
             if (conn != null) {
                 try {
                     conn.close();
@@ -127,19 +137,46 @@ public class Agenda {
         }
     }
 
-    public void alterarPessoas() {
-
-    }
-
-    public void excluirPessoas(int idExcluir) {
-        Statement stmt = null;
+    // Altera os dados do contato
+    public void alterarContato(Contatos contato) {
         Connection conn = null;
-
-        String sql = "DELETE FROM TB_CONTATO WHERE ID_CONTATO = ?";
+        String sql = "UPDATE TB_CONTATO SET NM_CONTATO = ?, DT_NASCIMENTO = ?, VL_TELEFONE = ?, VL_EMAIL = ? WHERE ID_CONTATO = ?";
 
         try {
-            conn = obterConexao();
-            stmt = conn.createStatement();
+            DBConnection banco = new DBConnection();
+            conn = banco.obterConexao();
+            PreparedStatement ps = conn.prepareStatement(sql);
+            
+            ps.setString(1, contato.getNome());
+            // Passa a data do java para data do banco
+            java.sql.Date dataBanco = new java.sql.Date(contato.getDataNascimento().getTime());
+            ps.setDate(2, dataBanco);
+            ps.setString(3, contato.getTelefone());
+            ps.setString(4, contato.getEmail());
+            // Seta qual contato será alterado
+            ps.setInt(5, contato.getId());
+            
+            int retornoQuery = ps.executeUpdate();
+            if(retornoQuery > 0){
+                System.out.println("Cadastro atualizado com sucesso");
+            }else{
+                System.out.println("Não foi possível realizar a operação desejada");
+            }
+        }catch(ClassNotFoundException ex){
+            Logger.getLogger(Agenda.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SQLException ex) {
+            System.err.println("Não foi possível alterar os dados do contato");
+            System.out.println(ex);
+        }
+    }
+
+    // Remove o contato do banco
+    public void excluirContato(int idExcluir) {
+        Connection conn = null;
+        String sql = "DELETE FROM TB_CONTATO WHERE ID_CONTATO = ?";
+        try {
+            DBConnection banco = new DBConnection();
+            conn = banco.obterConexao();
             PreparedStatement ps = conn.prepareStatement(sql);
 
             ps.setInt(1, idExcluir);
@@ -156,13 +193,6 @@ public class Agenda {
         } catch (ClassNotFoundException ex) {
             Logger.getLogger(Agenda.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
-            if (stmt != null) {
-                try {
-                    stmt.close();
-                } catch (SQLException ex) {
-                    Logger.getLogger(Agenda.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
             if (conn != null) {
                 try {
                     conn.close();

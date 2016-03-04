@@ -5,6 +5,10 @@
  */
 package br.senac.tads.pi3.zorg.agenda;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Scanner;
 
 /**
@@ -30,7 +34,7 @@ public class Menu {
             opcao = leitor.nextInt();
             switch (opcao) {
                 case 1: {
-                    agenda.listarPessoas();
+                    agenda.listarContatos();
                     System.out.println("");
                     break;
                 }
@@ -42,33 +46,78 @@ public class Menu {
                     System.out.println("Informe os dados do contato:");
 
                     System.out.println("Nome: ");
-                    nomeContato = leitor.nextLine();
-                    nomeContato = leitor.nextLine();
+                    nomeContato = lerString();
                     System.out.println("");
 
                     System.out.println("Telefone: ");
-                    telefone = leitor.nextLine();
+                    telefone = lerString();
                     System.out.println("");
 
                     System.out.println("E-mail: ");
-                    email = leitor.nextLine();
+                    email = lerString();
                     System.out.println("");
-
+                    
+                    DateFormat formatadorData = new SimpleDateFormat("dd/MM/yyyy");
                     System.out.println("Data de Nascimento: ");
-                    dataNasc = leitor.nextLine();
-                    System.out.println("");
-                    agenda.cadastrarPessoas(telefone, nomeContato, email, dataNasc);
+                    dataNasc = lerString();
+                    try{
+                        // Pega a string digitada e converte para data
+                        Date dataFormatada = formatadorData.parse(dataNasc);
+                        System.out.println("");
+                        agenda.cadastrarContato(telefone, nomeContato, email, dataFormatada);
+                    }catch(ParseException ex){
+                        System.out.println("Data inválida");
+                    }
+                    
                     break;
                 }
                 case 3: {
-                    agenda.alterarPessoas();
+                    System.out.println("Qual ID do contato que você deseja alterar?");
+                    // Recebe contato
+                    int id = leitor.nextInt();
+                    DateFormat formatadorData = new SimpleDateFormat("dd/MM/yyyy");
+                    // Exibe os dados do contato
+                    Contatos contato = agenda.listarContato(id);
+                    System.out.println("Nome: "+ contato.getNome());
+                    System.out.println("Telefone: "+ contato.getTelefone());
+                    System.out.println("E-mail: "+ contato.getEmail());
+                    System.out.println("Data de nascimento: "+ formatadorData.format(contato.getDataNascimento()));
+                    
+                    String resposta = null;
+                    System.out.println("Deseja alterar o Nome? (S/N)");
+                    resposta = lerString();
+                    if(resposta.equalsIgnoreCase("S")){
+                        contato.setNome(lerString());
+                    }
+                    System.out.println("Deseja alterar o Telefone? (S/N)");
+                    resposta = lerString();
+                    if(resposta.equalsIgnoreCase("S")){
+                        contato.setTelefone(lerString());
+                    }
+                    System.out.println("Deseja alterar o E-mail? (S/N)");
+                    resposta = lerString();
+                    if(resposta.equalsIgnoreCase("S")){
+                        contato.setEmail(lerString());
+                    }
+                    System.out.println("Deseja alterar a Data de nascimento? (S/N)");
+                    resposta = lerString();
+                    if(resposta.equalsIgnoreCase("S")){
+                        String dataNova = lerString();
+                        try{
+                            contato.setDataNascimento(formatadorData.parse(dataNova));
+                        }catch(ParseException ex){
+                            System.err.println("Por favor digite uma data válida");
+                        }
+                    }
+                    // Salva
+                    agenda.alterarContato(contato);
                     break;
                 }
                 case 4: {
                     System.out.println("Digite o ID do contato que deseja excluir: ");
                     int idExcluir = leitor.nextInt();
                     System.out.println("");
-                    agenda.excluirPessoas(idExcluir);
+                    agenda.excluirContato(idExcluir);
                     break;
                 }
                 case 5: {
@@ -80,5 +129,9 @@ public class Menu {
             }
         }
     }
-
+    
+    public static String lerString(){
+        Scanner teclado = new Scanner(System.in);
+        return teclado.nextLine();
+    }
 }
